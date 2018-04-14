@@ -1,3 +1,8 @@
+/*
+ * Create By:  Chen Naveh
+ * Student ID: 301841664
+ *
+ */
 #include "ut.h"
 #include <signal.h>
 #include <unistd.h>
@@ -10,7 +15,6 @@ static ut_slot_t table[MAX_TAB_SIZE];
 static ucontext_t temp_uc;
 static unsigned int next_idx = 0;
 static unsigned int table_size;
-static int stack_size = 8192;
 static volatile int currThreadNum = 0;
 
 void handler(int signal) {
@@ -28,11 +32,13 @@ void handler(int signal) {
 }
 
 int ut_init(int tab_size) {
+	/* setting up table size */
 	if (tab_size > MAX_TAB_SIZE || tab_size < MIN_TAB_SIZE) {
 		table_size = MAX_TAB_SIZE;
 	} else {
 		table_size = tab_size;
 	}
+
 	struct sigaction sa;
 	struct itimerval itv;
 
@@ -54,11 +60,12 @@ int ut_init(int tab_size) {
 }
 
 tid_t ut_spawn_thread(void (*func)(int), int arg) {
+	/* appending new thread to table */
 	if (next_idx > MAX_TAB_SIZE) return TAB_FULL;
 	if (getcontext(&table[next_idx].uc) == -1) return SYS_ERR;
 	table[next_idx].uc.uc_link = &temp_uc;
-	table[next_idx].uc.uc_stack.ss_size = stack_size;
-	table[next_idx].uc.uc_stack.ss_sp = malloc(stack_size);
+	table[next_idx].uc.uc_stack.ss_size = STACKSIZE;
+	table[next_idx].uc.uc_stack.ss_sp = malloc(STACKSIZE);
 	if (!table[next_idx].uc.uc_stack.ss_sp) return SYS_ERR;
 	table[next_idx].vtime = 0;
 	table[next_idx].func = func;
@@ -69,6 +76,7 @@ tid_t ut_spawn_thread(void (*func)(int), int arg) {
 }
 
 int ut_start(void) {
+	/* start running thread table */
 	alarm(1);
 	swapcontext(&temp_uc, &table[currThreadNum].uc);
 
@@ -76,5 +84,6 @@ int ut_start(void) {
 }
 
 unsigned long ut_get_vtime(tid_t tid) {
+	/* return virtual CPU time used by tid */
 	return table[tid].vtime;
 }
