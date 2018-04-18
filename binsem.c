@@ -2,6 +2,11 @@
  * Create By:  Chen Naveh
  * Student ID: 301841664
  *
+ * This file implements binary semaphore.
+ * binsem_init() - init new binary semaphore
+ * binsem_up()   - semaphore UP operation
+ * binsem_down() - semaphore DOWN operatoin
+ *
  */
 #include "binsem.h"
 #include <signal.h>

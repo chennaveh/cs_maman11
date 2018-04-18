@@ -2,6 +2,12 @@
  * Create By:  Chen Naveh
  * Student ID: 301841664
  *
+ * This file define user thread API. Including:
+ * ut_init() 		 - initial user thread table
+ * ut_spawn_thread() - append new thread to table
+ * ut_start()		 - start running thread table
+ * ut_get_vtime() 	 - query cpu time for thread id
+ *
  */
 #include "ut.h"
 #include <signal.h>
