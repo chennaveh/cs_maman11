@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include <sys/time.h>
 
 /* The contexts. */
@@ -35,6 +36,10 @@ void handler(int signal) {
 		//printf("in signal handler: switching from %d to %d\n", currThreadNum, next);
 		currThreadNum = next;
 		swapcontext(&table[curr_temp].uc, &table[next].uc);
+		if (errno != 0) {
+			perror("scheduler hanlder error \n");
+			exit(1);
+		}
 	}
 }
 
@@ -85,6 +90,7 @@ tid_t ut_spawn_thread(void (*func)(int), int arg) {
 	table[next_idx].arg = arg;
 
 	makecontext(&table[next_idx].uc, (void(*)(void)) func, 1, arg);
+
 	total_initializied_threads++;
 	return next_idx++;
 }
@@ -99,6 +105,9 @@ int ut_start(void) {
 	/* start running thread table */
 	alarm(1);
 	swapcontext(&temp_uc, &table[currThreadNum].uc);
+	if (errno != 0) {
+		return SYS_ERR;
+	}
 
 	return 0;
 }
