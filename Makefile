@@ -1,9 +1,5 @@
-#all: binsem.a ut.a ph 
+all: binsem.a ut.a
 FLAGS = -Wall  -L./ -m32
-
-
-ph: ph.c binsem.a ut.a
-	gcc ${FLAGS} ph.c -lbinsem -lut -o ph
 
 
 binsem.a:

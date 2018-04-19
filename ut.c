@@ -20,7 +20,8 @@
 static ut_slot_t table[MAX_TAB_SIZE];
 static ucontext_t temp_uc;
 static unsigned int next_idx = 0;
-static unsigned int table_size;
+static unsigned int table_size = 0;
+static unsigned int total_initializied_threads = 0;
 static volatile int currThreadNum = 0;
 
 void handler(int signal) {
@@ -29,9 +30,9 @@ void handler(int signal) {
 		table[currThreadNum].vtime += 10;
 	} else if (signal == SIGALRM) {
 		alarm(1);
-		int next = (currThreadNum + 1) % table_size;
+		int next = (currThreadNum + 1) % total_initializied_threads;
 		int curr_temp = currThreadNum;
-		printf("in signal handler: switching from %d to %d\n", currThreadNum, next);
+		//printf("in signal handler: switching from %d to %d\n", currThreadNum, next);
 		currThreadNum = next;
 		swapcontext(&table[curr_temp].uc, &table[next].uc);
 	}
@@ -66,8 +67,14 @@ int ut_init(int tab_size) {
 }
 
 tid_t ut_spawn_thread(void (*func)(int), int arg) {
+	/* vaild table check */
+	if (table_size == 0) {
+		perror("table size is 0");
+		return SYS_ERR;
+	}
+
 	/* appending new thread to table */
-	if (next_idx > MAX_TAB_SIZE) return TAB_FULL;
+	if (next_idx >= MAX_TAB_SIZE) return TAB_FULL;
 	if (getcontext(&table[next_idx].uc) == -1) return SYS_ERR;
 	table[next_idx].uc.uc_link = &temp_uc;
 	table[next_idx].uc.uc_stack.ss_size = STACKSIZE;
@@ -78,10 +85,17 @@ tid_t ut_spawn_thread(void (*func)(int), int arg) {
 	table[next_idx].arg = arg;
 
 	makecontext(&table[next_idx].uc, (void(*)(void)) func, 1, arg);
+	total_initializied_threads++;
 	return next_idx++;
 }
 
 int ut_start(void) {
+	/* available threads check */
+	if (total_initializied_threads == 0) {
+		perror("no threads spawed to table");
+		return SYS_ERR;
+	}
+
 	/* start running thread table */
 	alarm(1);
 	swapcontext(&temp_uc, &table[currThreadNum].uc);
@@ -90,6 +104,11 @@ int ut_start(void) {
 }
 
 unsigned long ut_get_vtime(tid_t tid) {
+	/* tid check */
+	if (tid >= total_initializied_threads) {
+		fprintf(stderr, "tid %d is not initialized \n", tid);
+		return SYS_ERR;
+	}
 	/* return virtual CPU time used by tid */
 	return table[tid].vtime;
 }
